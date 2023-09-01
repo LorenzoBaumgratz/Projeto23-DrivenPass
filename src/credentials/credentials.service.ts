@@ -22,17 +22,17 @@ export class CredentialsService {
     const existsCred=await this.credentialsRepository.findById(id)
     if(!existsCred) throw new NotFoundException()
 
-    const isUser=await this.credentialsRepository.findByUserId(userId)
+    const isUser=await this.credentialsRepository.findByIdAndUser(id,userId)
     if(!isUser) throw new ForbiddenException()
 
-    return await this.credentialsRepository.findByIdAndUser(id,userId)
+    return isUser
   }
 
   async remove(id: number,userId:number) {
     const existsCred=await this.credentialsRepository.findById(id)
     if(!existsCred) throw new NotFoundException()
 
-    const isUser=await this.credentialsRepository.findByUserId(userId)
+    const isUser=await this.credentialsRepository.findByIdAndUser(id,userId)
     if(!isUser) throw new ForbiddenException()
     
     return await this.credentialsRepository.delete(id,userId)

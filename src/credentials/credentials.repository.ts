@@ -1,18 +1,23 @@
 import { Injectable } from '@nestjs/common';
 import { CreateCredentialDto } from './dto/create-credential.dto';
-import { UpdateCredentialDto } from './dto/update-credential.dto';
 import { User } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import Cryptr from 'cryptr';
 
 @Injectable()
 export class CredentialsRepository {
-  constructor(private readonly prisma:PrismaService){}
-  
+  private cryptr:Cryptr
+
+  constructor(private readonly prisma:PrismaService){
+    const Cryptr=require('cryptr')
+    this.cryptr= new Cryptr('myTotallySecretKey')
+  }
+
   create(createCredentialDto: CreateCredentialDto, user: User) {
     return this.prisma.credential.create({
       data:{
         rotulo:createCredentialDto.rotulo,
-        senha:createCredentialDto.senha,
+        senha:this.cryptr.encrypt(createCredentialDto.senha),
         url:createCredentialDto.url,
         username:createCredentialDto.username,
         userId:user.id
@@ -35,10 +40,15 @@ export class CredentialsRepository {
     })
   }
 
-  findByIdAndUser(id: number, userId: number) {
-    return this.prisma.credential.findFirst({
+  async findByIdAndUser(id: number, userId: number) {
+    const cred= await this.prisma.credential.findFirst({
       where:{id,userId}
     })
+
+    return {
+      ...cred,
+      senha:this.cryptr.decrypt(cred.senha)
+    }
   }
 
   findById(id:number){
@@ -53,9 +63,16 @@ export class CredentialsRepository {
     })
   }
 
-  findAll(userId: number) {
-    return this.prisma.credential.findMany({
+  async findAll(userId: number) {
+    const cred=await this.prisma.credential.findMany({
       where:{userId}
     })
+
+    return cred.map(c=>(
+      {
+        ...c,
+        senha:this.cryptr.decrypt(c.senha)
+      }
+    ))
   }
 }
