@@ -11,6 +11,7 @@ import { CreateCredentialDto } from '../src/credentials/dto/create-credential.dt
 import { faker } from '@faker-js/faker';
 import { JwtService } from '@nestjs/jwt';
 import { CreateUserDto } from '../src/users/dto/create-user.dto';
+import { CredentialFactory } from './factories/credential.factory';
 
 describe('Credentials E2E Tests', () => {
   let app: INestApplication;
@@ -42,11 +43,6 @@ describe('Credentials E2E Tests', () => {
       .withEmail("lorenzobaumgratz9@yahoo.com.br")
       .withSenha("s3nh@F4rte")
       .persist()
-      
-      const authDto: CreateUserDto = new CreateUserDto({
-        email:"lorenzobaumgratz9@yahoo.com.br",
-        senha:"s3nh@F4rte"
-      });
 
     const token=await E2EUtils.generateToken(jwt,user)
 
@@ -71,19 +67,93 @@ describe('Credentials E2E Tests', () => {
       rotulo:"isso",
       senha:expect.any(String),
       username:"loren",
-      userId:expect.any(Number)
+      userId:user.id
     })
   });
 
   it('GET /credentials', async () => {
-    
+    const user=await new UserFactory(prisma)
+      .withEmail("lorenzobaumgratz9@yahoo.com.br")
+      .withSenha("s3nh@F4rte")
+      .persist()
+
+    const token=await E2EUtils.generateToken(jwt,user)
+    const credential=await new CredentialFactory(prisma)
+      .withRotulo("isso")
+      .withSenha("s3nh@F4rte")
+      .withUrl(faker.internet.url())
+      .withUsername("loren")
+      .withUserId(user.id)
+      .persist()
+
+    const cred=  await request(app.getHttpServer())
+      .get('/credentials')
+      .set('Authorization',`Bearer ${token}`)
+      .expect(HttpStatus.OK)
+
+      expect(cred.body).toHaveLength(1)
+      expect(cred.body[0]).toEqual({
+        id: credential.id,
+        url:credential.url,
+        rotulo:credential.rotulo,
+        senha:expect.any(String),
+        username:credential.username,
+        userId:credential.userId
+      })
   });
 
   it('GET /credentials/:id', async () => {
-    
+    const user=await new UserFactory(prisma)
+      .withEmail("lorenzobaumgratz9@yahoo.com.br")
+      .withSenha("s3nh@F4rte")
+      .persist()
+
+    const token=await E2EUtils.generateToken(jwt,user)
+    const credential=await new CredentialFactory(prisma)
+      .withRotulo("isso")
+      .withSenha("s3nh@F4rte")
+      .withUrl(faker.internet.url())
+      .withUsername("loren")
+      .withUserId(user.id)
+      .persist()
+
+    const cred=  await request(app.getHttpServer())
+      .get(`/credentials/${credential.id}`)
+      .set('Authorization',`Bearer ${token}`)
+      .expect(HttpStatus.OK)
+
+      expect(cred.body).toEqual({
+        id: credential.id,
+        url:credential.url,
+        rotulo:credential.rotulo,
+        senha:expect.any(String),
+        username:credential.username,
+        userId:credential.userId
+      })
   });
 
   it('DELETE /credentials/:id', async () => {
-    
+    const user=await new UserFactory(prisma)
+      .withEmail("lorenzobaumgratz9@yahoo.com.br")
+      .withSenha("s3nh@F4rte")
+      .persist()
+
+    const token=await E2EUtils.generateToken(jwt,user)
+    const credential=await new CredentialFactory(prisma)
+      .withRotulo("isso")
+      .withSenha("s3nh@F4rte")
+      .withUrl(faker.internet.url())
+      .withUsername("loren")
+      .withUserId(user.id)
+      .persist()
+
+    await request(app.getHttpServer())
+      .delete(`/credentials/${credential.id}`)
+      .set('Authorization',`Bearer ${token}`)
+      .expect(HttpStatus.OK)
+
+      const cred=  await prisma.credential.findMany()
+      expect(cred).toHaveLength(0)
+      
   });
 });

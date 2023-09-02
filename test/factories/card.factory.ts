@@ -1,7 +1,8 @@
+import Cryptr from "cryptr";
 import { PrismaService } from "../../src/prisma/prisma.service";
 
 export class CardFactory { 
-  private cardNumber: number;
+  private cardNumber: string;
   private cardName: string;
   private userId: number;
   private cardCVC: string;
@@ -9,10 +10,14 @@ export class CardFactory {
   private cardPassword:string
   private cardType:string
   private virtual:boolean
+  private cryptr:Cryptr
 
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) { 
+    const Cryptr=require('cryptr')
+    this.cryptr= new Cryptr('myTotallySecretKey')
+  }
   
-  withCardNumber(cardNumber: number) {
+  withCardNumber(cardNumber: string) {
     this.cardNumber = cardNumber;
     return this;
   }
@@ -57,9 +62,9 @@ export class CardFactory {
       cardNumber: this.cardNumber,
       cardName: this.cardName,
       userId:this.userId,
-      cardCVC:this.cardCVC,
+      cardCVC:this.cryptr.encrypt(this.cardCVC),
       cardExp:this.cardExp,
-      cardPassword:this.cardPassword,
+      cardPassword:this.cryptr.encrypt(this.cardPassword),
       cardType:this.cardType,
       virtual:this.virtual,
     }
