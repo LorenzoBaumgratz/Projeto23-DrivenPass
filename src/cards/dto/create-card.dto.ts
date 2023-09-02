@@ -29,4 +29,7 @@ export class CreateCardDto {
     @IsBoolean()
     virtual:boolean
 
+    constructor(params?: Partial<CreateCardDto>) {
+        Object.assign(this, params);
+    }
 }
